@@ -2,7 +2,7 @@ from typing import List
 from transaction import Transaction
 
 
-def filter_by_category(transactions: List[Transaction], category: list) -> List[Transaction]:
+def filter_by_category(transactions: List[Transaction], category: str) -> List[Transaction]:
     """
     Фильтрует транзакции по категориям
     """
