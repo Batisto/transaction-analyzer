@@ -1,10 +1,30 @@
+from functools import wraps
 from pathlib import Path
 from transaction import Transaction
 from filters.category_filter import filter_by_category
 from filters.weekday_filter import filter_by_weekday
-from services.piggy_bank import calculate_fixed_to_savings, calculate_percent_to_savings, calculate_round_up_savings
+from services.services import calculate_fixed_to_savings, calculate_percent_to_savings, calculate_round_up_savings
 import pandas as pd
 from typing import List
+from functools import wraps
+
+
+def save_to_excel(sheet_name: str, file_name:str = "reports.xlsx"):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            df = func(*args, **kwargs)
+            if not isinstance(df, pd.DataFrame):
+                raise TypeError("Функция должна возвращать DataFrame")
+
+            output_path = Path(__file__).resolve().parent.parent / "output" / file_name
+
+            with pd.ExcelWriter(output_path, engine="openpyxl", mode="a" if output_path.exists() else 'w') as writer:
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            return df
+        return wrapper
+    return decorator
 
 
 def generate_report(
@@ -99,7 +119,7 @@ def generate_report(
         }
 
         weekday_df = pd.DataFrame(weekday_data)
-        weekday_df.to_excel(writer, sheet_name="Будни/Выходные", index=False)
+        weekday_df.to_excel(writer, sheet_name="Будни_Выходные", index=False)
 
         #Лист "Копилка"
         savings_round = calculate_round_up_savings(transactions)

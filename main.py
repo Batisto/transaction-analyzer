@@ -1,75 +1,41 @@
-from pathlib import Path
 from parsers.parser_excel import parse_excel
-from export.excel_exporter import generate_report
-
-def get_user_input(prompt: str) -> str:
-    user_input = input(prompt).strip()
-    if not user_input:
-        print("Ввод не должен быть пустым")
-        return get_user_input(prompt)
-    return user_input
+from controller import generate_full_report
 
 
-def choice_saving_method():
-    print("\nВыберите способ накопления:")
-    print("1. Округление до сотен")
-    print("2. Фиксированная сумма с каждой траты")
-    print("3. Процент от каждой траты")
-
-    while True:
-        choice = input("Введите номер (1-3): ").strip()
-        if choice in ["1", "2", "3"]:
-            return choice
-        print("⚠️ Некорректный выбор. Попробуйте снова.")
+def get_user_input(prompt: str, default: str = "") -> str:
+    value = input(f"{prompt}{f' (по умолчанию: {default})' if default else ''}: ").strip()
+    return value if value else default
 
 
 def main():
-    print('Добро пожаловать в программу "Анализатор транзакций!"')
+    print("Добро пожаловать в Анализатор транзакций")
 
-    file_path = get_user_input("Укажите путь к Excel-файлу (например, ../input/operations.xlsx):")
+    file_path = get_user_input("Укажите путь к Excel-файлу", "../input/data.xlsx")
+    category = get_user_input("Введите категорию для анализа", "Продукты")
+    month = get_user_input("Введите месяц в формате YYYY-MM", "2025-06")
 
     try:
-        print("Загружаем данные...")
+        round_limit = float(get_user_input("Введите лимит округления (например, 50)", "50"))
+    except ValueError:
+        print("Введено некорректное значение, используется значение по умолчанию: 50")
+        round_limit = 50.0
+
+    try:
         transactions = parse_excel(file_path)
-        print(f"Загружено {len(transactions)} транзакций")
+        print(f"Загружено транзакций: {len(transactions)}")
     except Exception as e:
         print(f"Ошибка при загрузке данных: {e}")
-        return  # Выходим из программы, если не удалось загрузить данные
+        return
 
-    saving_choice = choice_saving_method()
+    output_path = generate_full_report(
+        transactions=transactions,
+        month=month,
+        category=category,
+        round_limit=round_limit,
+        excel_filename="report.xlsx"
+    )
 
-    fixed_amount = 50.0
-    percent = 5.0
-
-    if saving_choice == "2":
-        while True:
-            try:
-                fixed_amount = float(get_user_input("🔢 Укажите фиксированную сумму накопления с каждой траты (по умолчанию 50 ₽): "))
-                break
-            except ValueError:
-                print("⚠️ Неверный формат числа. Используется значение по умолчанию: 50 ₽")
-                fixed_amount = 50.0
-                break
-    elif saving_choice == "3":
-        while True:
-            try:
-                percent = float(get_user_input("🔢 Укажите процент накопления от каждой траты (по умолчанию 5%): "))
-                break
-            except ValueError:
-                print("⚠️ Неверный формат числа. Используется значение по умолчанию: 5%")
-                percent = 5.0
-                break
-
-    print("📄 Генерируем отчёт...")
-
-    if saving_choice == "1":
-        generate_report(transactions, "report.xlsx", fixed_amount=0.0, percent=0.0)
-    elif saving_choice == "2":
-        generate_report(transactions, "report.xlsx", fixed_amount=fixed_amount, percent=0.0)
-    elif saving_choice == "3":
-        generate_report(transactions, "report.xlsx", fixed_amount=0.0, percent=percent)
-
-    print("✨ Отчёт успешно создан!")
+    print(f"Отчёт успешно сохранён в: {output_path}")
 
 
 if __name__ == "__main__":
