@@ -23,7 +23,7 @@ def expenses_by_category(df: pd.DataFrame, category: str, month: str) -> pd.Data
     return filtered.drop(columns=['operation_month'])
 
 
-@save_to_excel(sheet_name="Будни/Выходные")
+@save_to_excel(sheet_name="Будни_Выходные")
 def expenses_by_weekday(df: pd.DataFrame, month: str) -> pd.DataFrame:
     """
     Возвращает DataFrame с суммой расходов по дням недели за указанный месяц.
