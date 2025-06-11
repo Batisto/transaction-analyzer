@@ -1,4 +1,4 @@
-from parsers.parser_excel import parse_excel
+from src.parser_excel import parse_excel
 from controller import generate_full_report
 
 

@@ -1,5 +1,5 @@
 import pandas as pd
-from export.excel_exporter import save_to_excel
+from src.excel_exporter import save_to_excel
 
 
 @save_to_excel(sheet_name="Категория")

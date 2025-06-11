@@ -1,5 +1,4 @@
 import os
-from asyncio import timeout
 
 from dotenv import load_dotenv
 
@@ -7,14 +6,11 @@ load_dotenv()
 
 import json
 from pathlib import Path
-from string import digits
-from parsers.parser_excel import parse_excel
-from transaction import Transaction
+from src.parser_excel import parse_excel
 from datetime import datetime
 from typing import List, Dict, Any
 from transaction import Transaction
 import requests
-import time
 
 
 def get_greeting(hour: int) -> str:

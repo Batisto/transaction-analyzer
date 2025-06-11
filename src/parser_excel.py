@@ -1,5 +1,5 @@
 import pandas as pd
-from transaction import Transaction
+from src.transaction import Transaction
 
 def parse_excel(file_path: str) -> list[Transaction]:
     """
