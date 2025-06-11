@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from transaction import Transaction
+from src.transaction import Transaction
 
 
 def transactions_to_json(transactions: list[Transaction], filename: str) -> Path:

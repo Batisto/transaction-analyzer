@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from transaction import Transaction
+from src.transaction import Transaction
 
 
 def is_weekday(date: datetime) -> bool:
