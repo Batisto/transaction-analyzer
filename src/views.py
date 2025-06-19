@@ -9,7 +9,7 @@ from pathlib import Path
 from src.parser_excel import parse_excel
 from datetime import datetime
 from typing import List, Dict, Any
-from transaction import Transaction
+from src.transaction import Transaction
 import requests
 
 from src.logger import logger
@@ -33,7 +33,7 @@ def load_user_settings() -> Dict[str, Any]:
 
 
 def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
-    dt = datetime.strptime(datetime_str, "Y%-m%-d% %H-%M-%S")
+    dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
 
     greeting = get_greeting(dt.hour)
     logger.debug("Приветствие: %s", greeting)
@@ -89,8 +89,8 @@ def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
     stock_prices = get_stock_prices(stock_list)
 
     result = {
-        "greeting": get_greeting,
-        "card": cards,
+        "greeting": greeting,
+        "cards": cards,
         "top_transactions": top_transactions,
         "currency_rate": [],
         "stock_prices": []
