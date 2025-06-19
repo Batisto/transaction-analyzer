@@ -1,9 +1,11 @@
-from src.parser_excel import parse_excel
 from controller import generate_full_report
+from src.parser_excel import parse_excel
 
 
 def get_user_input(prompt: str, default: str = "") -> str:
-    value = input(f"{prompt}{f' (по умолчанию: {default})' if default else ''}: ").strip()
+    value = input(
+        f"{prompt}{f' (по умолчанию: {default})' if default else ''}: "
+    ).strip()
     return value if value else default
 
 
@@ -15,7 +17,9 @@ def main():
     month = get_user_input("Введите месяц в формате YYYY-MM", "2025-06")
 
     try:
-        round_limit = float(get_user_input("Введите лимит округления (например, 50)", "50"))
+        round_limit = float(
+            get_user_input("Введите лимит округления (например, 50)", "50")
+        )
     except ValueError:
         print("Введено некорректное значение, используется значение по умолчанию: 50")
         round_limit = 50.0
@@ -32,7 +36,7 @@ def main():
         month=month,
         category=category,
         round_limit=round_limit,
-        excel_filename="report.xlsx"
+        excel_filename="report.xlsx",
     )
 
     print(f"Отчёт успешно сохранён в: {output_path}")

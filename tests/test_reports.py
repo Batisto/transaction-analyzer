@@ -1,5 +1,7 @@
-import pandas as pd
 from dataclasses import asdict
+
+import pandas as pd
+
 from src.reports import raw_expenses_by_category, raw_expenses_by_weekday
 
 
@@ -13,7 +15,9 @@ def test_expenses_by_category(sample_transactions):
     # Проверки
     assert not result.empty, "Результат должен быть непустым"
     assert "category" in result.columns, "В результатах должна быть колонка 'category'"
-    assert (result['category'] == "Продукты").all(), "Все строки должны относиться к категории 'Продукты'"
+    assert (
+        result["category"] == "Продукты"
+    ).all(), "Все строки должны относиться к категории 'Продукты'"
 
 
 def test_expenses_by_weekday(sample_transactions):
@@ -25,10 +29,27 @@ def test_expenses_by_weekday(sample_transactions):
 
     # Проверки
     assert not result.empty, "Результат должен быть непустым"
-    assert "weekday_name" in result.columns, "В результатах должна быть колонка 'weekday_name'"
-    assert "Сумма расходов (₽)" in result.columns, "В результатах должна быть колонка 'Сумма расходов (₽)'"
-    assert (result["Сумма расходов (₽)"] > 0).all(), "Суммы расходов должны быть положительными"
-    assert result["weekday_name"].isin([
-        "Понедельник", "Вторник", "Среда", "Четверг",
-        "Пятница", "Суббота", "Воскресенье"
-    ]).all(), "В результатах должны быть корректные названия дней недели"
+    assert (
+        "weekday_name" in result.columns
+    ), "В результатах должна быть колонка 'weekday_name'"
+    assert (
+        "Сумма расходов (₽)" in result.columns
+    ), "В результатах должна быть колонка 'Сумма расходов (₽)'"
+    assert (
+        result["Сумма расходов (₽)"] > 0
+    ).all(), "Суммы расходов должны быть положительными"
+    assert (
+        result["weekday_name"]
+        .isin(
+            [
+                "Понедельник",
+                "Вторник",
+                "Среда",
+                "Четверг",
+                "Пятница",
+                "Суббота",
+                "Воскресенье",
+            ]
+        )
+        .all()
+    ), "В результатах должны быть корректные названия дней недели"

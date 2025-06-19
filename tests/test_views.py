@@ -1,4 +1,3 @@
-import pytest
 from src.views import home_page_view
 
 

@@ -1,16 +1,18 @@
+from pathlib import Path
 from typing import List
+
 import pandas as pd
+
 from src.reports import expenses_by_category, expenses_by_weekday
 from src.services import calculate_piggybank
-from pathlib import Path
 
 
 def generate_full_report(
-        transactions: List,
-        month: str,
-        category: str,
-        round_limit: 50.0,
-        excel_filename: str = "reports.xlsx"
+    transactions: List,
+    month: str,
+    category: str,
+    round_limit: 50.0,
+    excel_filename: str = "reports.xlsx",
 ) -> Path:
     """
     Вызывает аналитические функции, сохраняет excel отчет и возвращает путь к файлу
@@ -21,7 +23,7 @@ def generate_full_report(
             "operation_date": t.operation_date,
             "category": t.category,
             "description": t.description,
-            "amount": t.amount
+            "amount": t.amount,
         }
         for t in transactions
     ]
