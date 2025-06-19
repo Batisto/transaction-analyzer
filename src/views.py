@@ -9,8 +9,10 @@ from pathlib import Path
 from src.parser_excel import parse_excel
 from datetime import datetime
 from typing import List, Dict, Any
-from transaction import Transaction
+from src.transaction import Transaction
 import requests
+
+from src.logger import logger
 
 
 def get_greeting(hour: int) -> str:
@@ -31,14 +33,16 @@ def load_user_settings() -> Dict[str, Any]:
 
 
 def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
-    dt = datetime.strftime(datetime_str, "Y%-m%-d% %H-%M-%S")
-    greetings = get_greeting(dt.hour)
+    dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+
+    greeting = get_greeting(dt.hour)
+    logger.debug("Приветствие: %s", greeting)
 
     cards_dict = {}
     for t in transactions:
         if not t.description or not t.description.strip():
             continue
-        digits = ''.join(filter(str.isdigit, t.description))[-4:]
+        digits = ''.join(filter(lambda c: c.isdigit(), t.description))[-4:]
         if len(digits) < 4:
             continue
         if digits not in cards_dict:
@@ -49,6 +53,7 @@ def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
         if t.amount < 0:
             cards_dict[digits]["total_spent"] += abs(t.amount)
             cards_dict[digits]["cashback"] += round(abs(t.amount) / 100, 2)
+    logger.info("Сформировано %d карточек", len(cards_dict))
 
     cards = [
         {
@@ -61,9 +66,11 @@ def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
 
     #Топ 5 транзакций
     top = sorted(transactions, key=lambda t: abs(t.amount), reverse=True)[:5]
+    logger.info("Выбрано топ-5 транзакций")
+
     top_transactions = [
         {
-            "date": t.operation_date.strftime("%Y.%m.%d"),
+            "date": t.operation_date.strftime("%d.%m.%Y"),
             "amount": round(t.amount, 2),
             "category": t.category,
             "description": t.description
@@ -73,6 +80,8 @@ def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
 
     # Загружаем настройки пользователя
     settings = load_user_settings()
+    logger.info("Загружены настройки пользователя: %s", settings)
+
     currency_list = settings.get("user_currencies", [])
     stock_list = settings.get("user_stocks", [])
 
@@ -80,8 +89,8 @@ def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
     stock_prices = get_stock_prices(stock_list)
 
     result = {
-        "greeting": get_greeting,
-        "card": cards,
+        "greeting": greeting,
+        "cards": cards,
         "top_transactions": top_transactions,
         "currency_rate": [],
         "stock_prices": []
