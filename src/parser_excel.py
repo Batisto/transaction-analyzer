@@ -1,5 +1,7 @@
 import pandas as pd
+
 from src.transaction import Transaction
+
 
 def parse_excel(file_path: str) -> list[Transaction]:
     """
@@ -15,11 +17,19 @@ def parse_excel(file_path: str) -> list[Transaction]:
         "Описание": "description",
         "Кэшбэк": "cashback",
         "Сумма операции": "amount",
-        "Бонусы (включая кэшбэк)": "bonuses"
+        "Бонусы (включая кэшбэк)": "bonuses",
     }
     df.rename(columns=column_mapping, inplace=True)
 
-    required_columns = ["operation_date", "payment_date", "category", "description", "cashback", "amount", "bonuses"]
+    required_columns = [
+        "operation_date",
+        "payment_date",
+        "category",
+        "description",
+        "cashback",
+        "amount",
+        "bonuses",
+    ]
     for col in required_columns:
         if col not in df.columns:
             raise ValueError(f"Отсутствует необходимый столбец: {col}")
@@ -27,7 +37,9 @@ def parse_excel(file_path: str) -> list[Transaction]:
     df["operation_date"] = pd.to_datetime(df["operation_date"], format="mixed")
     df["payment_date"] = pd.to_datetime(df["payment_date"], format="mixed")
 
-    df[["cashback", "amount", "bonuses"]] = df[["cashback", "amount", "bonuses"]].fillna(0)
+    df[["cashback", "amount", "bonuses"]] = df[
+        ["cashback", "amount", "bonuses"]
+    ].fillna(0)
 
     transactions = []
 
@@ -36,10 +48,12 @@ def parse_excel(file_path: str) -> list[Transaction]:
             operation_date=row["operation_date"],
             payment_date=row["payment_date"],
             category=row["category"] if pd.notna(row["category"]) else "Другое",
-            description=row["description"] if pd.notna(row["description"]) else "Нет описания",
+            description=(
+                row["description"] if pd.notna(row["description"]) else "Нет описания"
+            ),
             cashback=row["cashback"],
             amount=row["amount"],
-            bonuses=row["bonuses"]
+            bonuses=row["bonuses"],
         )
 
         transactions.append(transaction)

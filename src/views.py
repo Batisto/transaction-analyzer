@@ -2,15 +2,19 @@ import os
 
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 import json
-from pathlib import Path
-from src.parser_excel import parse_excel
 from datetime import datetime
-from typing import List, Dict, Any
-from transaction import Transaction
+from pathlib import Path
+from typing import Any, Dict, List
+
 import requests
+
+from src.logger import logger
+from src.parser_excel import parse_excel
+from src.transaction import Transaction
 
 
 def get_greeting(hour: int) -> str:
@@ -31,48 +35,52 @@ def load_user_settings() -> Dict[str, Any]:
 
 
 def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
-    dt = datetime.strftime(datetime_str, "Y%-m%-d% %H-%M-%S")
-    greetings = get_greeting(dt.hour)
+    dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+
+    greeting = get_greeting(dt.hour)
+    logger.debug("Приветствие: %s", greeting)
 
     cards_dict = {}
     for t in transactions:
         if not t.description or not t.description.strip():
             continue
-        digits = ''.join(filter(str.isdigit, t.description))[-4:]
+        digits = "".join(filter(lambda c: c.isdigit(), t.description))[-4:]
         if len(digits) < 4:
             continue
         if digits not in cards_dict:
-            cards_dict[digits] = {
-                "total_spent": 0.0,
-                "cashback": 0.0
-            }
+            cards_dict[digits] = {"total_spent": 0.0, "cashback": 0.0}
         if t.amount < 0:
             cards_dict[digits]["total_spent"] += abs(t.amount)
             cards_dict[digits]["cashback"] += round(abs(t.amount) / 100, 2)
+    logger.info("Сформировано %d карточек", len(cards_dict))
 
     cards = [
         {
             "last_digits": digits,
             "total_spent": round(data["total_spent"], 2),
-            "cashback": round(data["cashback"], 2)
+            "cashback": round(data["cashback"], 2),
         }
         for digits, data in cards_dict.items()
     ]
 
-    #Топ 5 транзакций
+    # Топ 5 транзакций
     top = sorted(transactions, key=lambda t: abs(t.amount), reverse=True)[:5]
+    logger.info("Выбрано топ-5 транзакций")
+
     top_transactions = [
         {
-            "date": t.operation_date.strftime("%Y.%m.%d"),
+            "date": t.operation_date.strftime("%d.%m.%Y"),
             "amount": round(t.amount, 2),
             "category": t.category,
-            "description": t.description
+            "description": t.description,
         }
         for t in top
     ]
 
     # Загружаем настройки пользователя
     settings = load_user_settings()
+    logger.info("Загружены настройки пользователя: %s", settings)
+
     currency_list = settings.get("user_currencies", [])
     stock_list = settings.get("user_stocks", [])
 
@@ -80,11 +88,11 @@ def home_page_view(transactions: List[Transaction], datetime_str: str) -> str:
     stock_prices = get_stock_prices(stock_list)
 
     result = {
-        "greeting": get_greeting,
-        "card": cards,
+        "greeting": greeting,
+        "cards": cards,
         "top_transactions": top_transactions,
         "currency_rate": [],
-        "stock_prices": []
+        "stock_prices": [],
     }
 
     return json.dumps(result, ensure_ascii=False, indent=4)
@@ -97,7 +105,7 @@ def get_currency_rate(currencies: List[str]) -> List[Dict[str, Any]]:
 
     url = "https://api.apilayer.com/exchangerates_data/latest"
     headers = {"apikey": api_key}
-    params = {"base": "RUB", "symbols": ','.join(currencies)}
+    params = {"base": "RUB", "symbols": ",".join(currencies)}
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=10)
@@ -105,14 +113,18 @@ def get_currency_rate(currencies: List[str]) -> List[Dict[str, Any]]:
         data = response.json()
         rates = data.get("rates", {})
 
-        return [{"currency": cur, "rate": round(1 / rates[cur], 2)} for cur in currencies if cur in rates]
+        return [
+            {"currency": cur, "rate": round(1 / rates[cur], 2)}
+            for cur in currencies
+            if cur in rates
+        ]
 
     except Exception as e:
         print(f"Ошибка при получении курсов валют: {e}")
         return []
 
 
-def get_stock_prices(stocks: List[str]) -> List[Dict[str,Any]]:
+def get_stock_prices(stocks: List[str]) -> List[Dict[str, Any]]:
     api_key = os.getenv("API_TWELVE_DATA")
     if not api_key:
         print("API-ключ для Twelve Data не найден в .env")
@@ -124,18 +136,15 @@ def get_stock_prices(stocks: List[str]) -> List[Dict[str,Any]]:
     for symbol in stocks:
         try:
             response = requests.get(
-                base_url,
-                params={"symbol": symbol, "apikey": api_key},
-                timeout=10
+                base_url, params={"symbol": symbol, "apikey": api_key}, timeout=10
             )
             response.raise_for_status()
             data = response.json()
 
             if "price" in data:
-                result.append({
-                    "stock": symbol,
-                    "price": round(float(data["price"]), 2)
-                })
+                result.append(
+                    {"stock": symbol, "price": round(float(data["price"]), 2)}
+                )
             else:
                 print(f"Не удалось загрузить цену для {symbol}:{data}")
         except Exception as e:
@@ -155,7 +164,7 @@ def run_analysis(file_path: str, datetime_str: str) -> str:
         "total_transactions": len(transaction),
         "total_income": round(sum(t.amount for t in transaction if t.amount > 0), 2),
         "total_expenses": round(sum(t.amount for t in transaction if t.amount < 0), 2),
-        "total_cashback": round(sum(t.cashback for t in transaction), 2)
+        "total_cashback": round(sum(t.cashback for t in transaction), 2),
     }
 
     return json.dumps(result, ensure_ascii=False, indent=4)

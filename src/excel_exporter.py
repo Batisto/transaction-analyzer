@@ -1,14 +1,20 @@
-from pathlib import Path
-from src.transaction import Transaction
-from src.category_filter import filter_by_category
-from src.weekday_filter import filter_by_weekday
-from src.services import calculate_fixed_to_savings, calculate_percent_to_savings, calculate_round_up_savings
-import pandas as pd
-from typing import List
 from functools import wraps
+from pathlib import Path
+from typing import List
+
+import pandas as pd
+
+from src.category_filter import filter_by_category
+from src.services import (
+    calculate_fixed_to_savings,
+    calculate_percent_to_savings,
+    calculate_round_up_savings,
+)
+from src.transaction import Transaction
+from src.weekday_filter import filter_by_weekday
 
 
-def save_to_excel(sheet_name: str, file_name:str = "reports.xlsx"):
+def save_to_excel(sheet_name: str, file_name: str = "reports.xlsx"):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -18,11 +24,17 @@ def save_to_excel(sheet_name: str, file_name:str = "reports.xlsx"):
 
             output_path = Path(__file__).resolve().parent.parent / "output" / file_name
 
-            with pd.ExcelWriter(output_path, engine="openpyxl", mode="a" if output_path.exists() else 'w') as writer:
+            with pd.ExcelWriter(
+                output_path,
+                engine="openpyxl",
+                mode="a" if output_path.exists() else "w",
+            ) as writer:
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
 
             return df
+
         return wrapper
+
     return decorator
 
 
@@ -30,27 +42,26 @@ def generate_report(
     transactions: List[Transaction],
     filename: str,
     fixed_amount: float = 50.0,
-    percent: float = 5.0
+    percent: float = 5.0,
 ):
     output_path = Path(__file__).parent.parent / "output" / filename
 
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
 
-        #Лист "транзакции"
+        # Лист "транзакции"
         data = [
             {
                 "Дата": t.operation_date.strftime("%d.%m.%Y"),
                 "Категория": t.category,
                 "Описание": t.description,
-                "Сумма": t.amount
+                "Сумма": t.amount,
             }
             for t in transactions
         ]
         df = pd.DataFrame(data)
         df.to_excel(writer, sheet_name="Транзакции", index=False)
 
-
-        #Лист "Сводка"
+        # Лист "Сводка"
         total_transactions = len(transactions)
         total_expenses = round(sum(t.amount for t in transactions if t.amount < 0), 2)
         total_income = round(sum(t.amount for t in transactions if t.amount > 0), 2)
@@ -60,7 +71,7 @@ def generate_report(
         all_dates = [t.operation_date.date() for t in transactions]
         start_date = min(all_dates).strftime("%d.%m.%Y")
         end_date = max(all_dates).strftime("%d.%m.%Y")
-        period = f'{start_date} - {end_date}'
+        period = f"{start_date} - {end_date}"
 
         summary_data = {
             "Показатель": [
@@ -69,7 +80,7 @@ def generate_report(
                 "Общая сумма доходов",
                 "Всего кэшбэка",
                 "Сумма накоплений (копилка)",
-                "Период"
+                "Период",
             ],
             "Значение": [
                 total_transactions,
@@ -77,50 +88,56 @@ def generate_report(
                 f"{total_income:,.2f} ₽",
                 f"{total_cashback:,.2f} ₽",
                 f"{total_savings:,.2f} ₽",
-                period
-            ]
+                period,
+            ],
         }
 
         summary_df = pd.DataFrame(summary_data)
         summary_df.to_excel(writer, sheet_name="Сводка", index=False)
 
-
-        #Лист "Категории"
+        # Лист "Категории"
         categories = set(t.category for t in transactions if t.amount < 0)
         category_totals = {
             cat: round(
-                sum(t.amount for t in filter_by_category(transactions, cat) if t.amount < 0),
-                2
+                sum(
+                    t.amount
+                    for t in filter_by_category(transactions, cat)
+                    if t.amount < 0
+                ),
+                2,
             )
             for cat in categories
         }
 
         category_data = {
             "Категория": list(category_totals.keys()),
-            "Сумма расходов (₽)": [abs(v) for v in category_totals.values()]
+            "Сумма расходов (₽)": [abs(v) for v in category_totals.values()],
         }
 
         category_df = pd.DataFrame(category_data)
         category_df.to_excel(writer, sheet_name="Категории", index=False)
 
-
-        #Лист Будни/Выходные
+        # Лист Будни/Выходные
 
         weekday_transactions = filter_by_weekday(transactions, weekday=True)
         weekend_transactions = filter_by_weekday(transactions, weekday=False)
 
-        total_weekday = round(sum(t.amount for t in weekday_transactions if t.amount < 0), 2)
-        total_weekend = round(sum(t.amount for t in weekend_transactions if t.amount < 0), 2)
+        total_weekday = round(
+            sum(t.amount for t in weekday_transactions if t.amount < 0), 2
+        )
+        total_weekend = round(
+            sum(t.amount for t in weekend_transactions if t.amount < 0), 2
+        )
 
         weekday_data = {
             "Тип дня": ["Будни", "Выходные"],
-            "Сумма расходов (₽)": [abs(total_weekday), abs(total_weekend)]
+            "Сумма расходов (₽)": [abs(total_weekday), abs(total_weekend)],
         }
 
         weekday_df = pd.DataFrame(weekday_data)
         weekday_df.to_excel(writer, sheet_name="Будни_Выходные", index=False)
 
-        #Лист "Копилка"
+        # Лист "Копилка"
         savings_round = calculate_round_up_savings(transactions)
         savings_fixed = calculate_fixed_to_savings(transactions, amount=fixed_amount)
         savings_percent = calculate_percent_to_savings(transactions, percent=percent)
@@ -129,18 +146,14 @@ def generate_report(
             "Способ накопления": [
                 "Округление до сотен",
                 "Фиксированная сумма",
-                "Процент от каждой траты"
+                "Процент от каждой траты",
             ],
-            "Параметр": [
-                "—",
-                f"{fixed_amount} ₽ с каждой",
-                f"{percent}%"
-            ],
+            "Параметр": ["—", f"{fixed_amount} ₽ с каждой", f"{percent}%"],
             "Сумма накоплений (₽)": [
                 round(savings_round, 2),
                 round(savings_fixed, 2),
-                round(savings_percent, 2)
-            ]
+                round(savings_percent, 2),
+            ],
         }
 
         piggybank_df = pd.DataFrame(piggybank_data)

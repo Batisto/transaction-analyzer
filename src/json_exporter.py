@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from src.transaction import Transaction
 
 
@@ -10,15 +11,17 @@ def transactions_to_json(transactions: list[Transaction], filename: str) -> Path
     output_path = Path(__file__).resolve().parent.parent / "output" / filename
 
     data = {
-        "transactions":[
+        "transactions": [
             {
-                "operation_date": t.operation_date.strftime("%Y-%m-%d"),  # дата в строку
+                "operation_date": t.operation_date.strftime(
+                    "%Y-%m-%d"
+                ),  # дата в строку
                 "payment_date": t.payment_date.strftime("%Y-%m-%d"),
                 "category": t.category,
                 "description": t.description,
                 "cashback": t.cashback,
                 "amount": t.amount,
-                "bonuses": t.bonuses
+                "bonuses": t.bonuses,
             }
             for t in transactions
         ]
